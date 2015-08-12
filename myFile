@@ -1,0 +1,184 @@
+'use strict';
+
+var famous = require('famous');
+var DOMElement = famous.domRenderables.DOMElement;
+var FamousEngine = famous.core.FamousEngine;
+var Position =famous.components.Position;
+var GestureHandler=famous.components.GestureHandler;
+var Transitionable=famous.transitions.Transitionable;
+var maths=famous.maths;
+var physics=famous.physics;	
+var Sphere=famous.physics.Sphere;
+var Vec3=famous.math.Vec3;
+var Gravity3D=famous.physics.Gravity3D;
+var Camera=famous.components.Camera;
+var PhysicsEngine=famous.physics.PhysicsEngine;
+/**
+HERE WE CENTER TWO DOM COMPONENTS
+ONE WITH ALIGN (blue) AND ONE WITH
+POSITION(white). BOTH CENTER THE NODE,
+BUT ALIGN USES LESS CODE TO DO THE SAME
+**/
+
+//create scene graph
+var scene = FamousEngine.createScene();
+//add two nodes 
+var alignedNode = scene.addChild();
+var positionedNode = alignedNode.addChild();
+var alignedSubNode=scene.addChild();
+var ghNode=scene.addChild();
+/**
+var position_scene=new Position(scene,alignedNode,positionedNode);
+position_scene.set(0,0,0,{duration:1000});
+**/
+// Size node 100px by 100px
+ghNode.setSizeMode('absolute','absolute')
+		.setAbsoluteSize(1300,1800)
+		//.setScale(1,1,1)
+		.setOrigin(0.5,0.5)
+		.setMountPoint(0.3,0.5)
+/**
+var trans_value=new Transitionable(0);
+trans_value.set(100,{duration:5000});
+setTimeout(function(){return trans_value.get()},1500);
+**/
+var orangeDIV=new DOMElement(ghNode,{
+  properties:{
+	'background-color':'orange'
+  },
+  tagName:'img',
+  attributes:{
+  src:'http://www.ronniesblog.com/wp-content/uploads/2015/06/hubble-space-wallpapers.jpg'
+  }
+});
+var slide_position=new Position(ghNode);
+var posX;
+var posY;
+function togglePosition2(){
+	posX=(posX)?0:1000;
+  	poxY=(posY)?1000:0;
+  slide_position.set(posX,posY,1,{duration:1000},togglePosition2);
+}
+//togglePosition2();
+//var orange_position=new Position(ghNode);
+var orange_position=new Transitionable([1,0,0,0]);
+orange_position.set(/**90,350,80,**/ [Math.cos(Math.PI/4),Math.sin(Math.PI/4),0,0],{duration:1000,curve:'spring',method:'slerp'});
+
+//not working handler
+/**
+var guHandler=new GestureHandler(ghNode);
+function callback(guHandler){
+
+	console.log('Gesture');
+}
+
+
+guHandler.on({'event':'tap',
+             	'points':2,
+             	'threshold':100},callback('move'));
+**/
+
+alignedNode.setSizeMode('absolute', 'absolute')
+           .setAbsoluteSize(100, 100)
+			.setOrigin(.5,.5)
+			.setMountPoint(.5,.5)
+          //Align node to center of parent 
+          //i.e. parent size * 0.5 === position applied
+           .setAlign(.5,.5);
+//attach a blue DOM element component
+var blueDIV = new DOMElement(alignedNode, { 
+  properties:{
+    'background-color':'#49afeb'
+  } 
+});
+alignedSubNode.setSizeMode('render','render')
+				.setAbsoluteSize(25,25)
+				.setAlign(.7,.7)
+				.setOrigin(.5,.5)
+				.setMountPoint(.5,.5)
+				.setScale(1,1,1)
+				
+var greyDIV=new DOMElement(alignedSubNode,{
+	properties:{
+		'background-color':'grey'    
+    }
+});
+var pos_animation=new Position(alignedSubNode);
+greyDIV.setContent('<p style="color:red">WELCOME</p>')
+
+//unlike Position, Align updates 
+//when the size of the parent changes
+var posX;
+var posY;
+function togglePosition1(){
+	posX=(posX)?0:100;
+  	posY=(posY)?0:200;
+  pos_animation.set(posX,posY,1,{duration:500},togglePosition1);
+}
+togglePosition1();
+
+//We can do the same thing with Position
+//but it takes a lot more code
+//custom components animation
+var parent = {}
+
+//First we find the parent Size
+//by adding a custom component.
+//This will call on every resize event
+scene.addComponent({
+  onSizeChange: function(size){
+    parent.x = size[0]
+    parent.y = size[1]
+    parent.z = size[2]
+    centerBasedOnParentSize(parent)
+  }
+});
+
+function centerBasedOnParentSize(parentSize){
+ //Then we multiply X and Y size of parent by 0.5
+  var centerofParentX = parentSize.x * 0.55;
+  var centerofParentY = parentSize.y * 0.15;
+ //then we move the node by that amount
+  positionedNode.setPosition(centerofParentX, centerofParentY)
+}; 
+
+
+
+//size node 50px by 50px. It is smaller so you 
+//can see white stacked on top of the blue node
+positionedNode.setSizeMode('absolute','absolute')
+              .setAbsoluteSize(50,50)
+				
+				.setOrigin(.5,.5)
+				.setMountPoint(.5,.5)
+//attach white DOM component
+var whiteDIV = new DOMElement(positionedNode, {
+  properties: {
+    'background-color': 'white'
+  }
+});
+var spinner=scene.addComponent({
+	onUpdate:function(time){
+    positionedNode.setRotation(0,0,time/1000);
+    alignedNode.setRotation(0,0,time/10);
+    	alignedSubNode.setRotation(0,0,time/30);
+    //scene.setRotation(0,time/1000,0);
+    ghNode.setRotation(0,0,time/80000);
+    scene.requestUpdateOnNextTick(spinner);
+    }
+});
+var spinner2=scene.addComponent({
+	onUpdate:function(time){
+      
+    positionedNode.setRotation(0,time/3500,0);
+//    alignedNode.setRotation(0,time/1000,0);
+//    	alignedSubNode.setRotation(time/100,0);
+//    scene.setRotation(time/1000,0);
+    scene.requestUpdateOnNextTick(spinner2);
+    }
+});
+scene.requestUpdate(spinner);
+scene.requestUpdate(spinner2)
+//Note how the nodes are moved from
+//their top left corner
+FamousEngine.init();
